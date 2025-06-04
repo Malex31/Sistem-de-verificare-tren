@@ -1,0 +1,72 @@
+#include <Wire.h>
+
+int distanta;  // Variabilă pentru distanța completă
+#define TRIG_PIN 12
+#define ECHO_PIN 11
+
+void setup() {
+  Serial.begin(9600);  // Inițializarea Serial Monitor
+  Wire.begin();        // Inițializarea I2C pe Master
+  Serial.println("vag2 pornit...");
+
+  pinMode(TRIG_PIN, OUTPUT);  // Setează TRIG ca output
+  pinMode(ECHO_PIN, INPUT);   // Setează ECHO ca input
+  Serial.println("vag1 pornit...");
+}
+
+void loop() {
+  long distantaVagon2 = getDistanceFromSlave();  // Obține distanța de la slave
+  long distantaVagon1 = measureDistance();      // Măsoară distanța cu propriul senzor ultrasonic
+
+
+
+  Serial.print("vag1 ");
+  Serial.print(distantaVagon1);
+  Serial.println(" cm");
+
+  delay(1000);  // Așteaptă 1 secundă înainte de următorul ciclu
+}
+
+
+long getDistanceFromSlave() {
+  byte distantaMSB, distantaLSB;
+  long distanta = 0;
+
+  // Solicită 2 bytes de la slave-ul cu adresa 4
+  Wire.requestFrom(4, 2);
+
+  if (Wire.available() == 2) {  // Dacă sunt disponibile 2 bytes
+    distantaMSB = Wire.read();  // Citește MSB
+    distantaLSB = Wire.read();  // Citește LSB
+
+    // Combină MSB și LSB pentru a obține valoarea completă
+    distanta = (distantaMSB << 8) | distantaLSB;
+
+    // Afișează datele primite
+    
+    Serial.print("vag2  ");
+    Serial.print(distanta);
+    Serial.println(" cm");
+  } else {
+    Serial.println("Eroare: Date insuficiente de la slave!");
+  }
+
+  delay(1000);  // Așteaptă 1 secundă înainte de următoarea cerere
+}
+
+long measureDistance() {
+  // Trimit impuls TRIG
+  digitalWrite(TRIG_PIN, LOW);
+  delayMicroseconds(2);
+  digitalWrite(TRIG_PIN, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(TRIG_PIN, LOW);
+
+  // Citește durata impulsului de pe pinul ECHO
+  long duration = pulseIn(ECHO_PIN, HIGH);
+
+  // Calculează distanța în cm
+  long distance = duration * 0.034 / 2;
+
+  return distance;
+}
