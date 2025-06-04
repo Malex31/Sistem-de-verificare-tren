@@ -1,0 +1,47 @@
+#include <Wire.h>
+#define SLAVE_ADDRESS 4
+
+#define TRIG_PIN 10
+#define ECHO_PIN 9
+
+void setup() {
+  Serial.begin(9600);  // Inițializarea Serial Monitor
+  Wire.begin(SLAVE_ADDRESS);  // Inițializarea I2C pe Slave
+  Wire.onRequest(sendData); 
+  pinMode(TRIG_PIN, OUTPUT);   
+  pinMode(ECHO_PIN, INPUT);  
+  Serial.println("Vagon 2 a pornit...");
+}
+
+void loop() {
+  
+}
+
+long measureDistance() {
+  
+  digitalWrite(TRIG_PIN, LOW);
+  delayMicroseconds(2);
+  digitalWrite(TRIG_PIN, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(TRIG_PIN, LOW);
+  
+  long duration = pulseIn(ECHO_PIN, HIGH);
+  long distance = duration * 0.034 / 2;
+
+  return distance;
+}
+
+void sendData() {
+  
+  long distanta = measureDistance();
+
+  byte MSB = (byte)(distanta >> 8);    // Byte-ul cel mai semnificativ
+  byte LSB = (byte)(distanta & 0xFF); // Byte-ul cel mai puțin semnificativ
+
+ Serial.print("Distanta masurata: ");
+  Serial.print(distanta);
+  Serial.println(" cm");
+
+  Wire.write(MSB);  // Trimite MSB
+  Wire.write(LSB);  // Trimite LSB
+}
